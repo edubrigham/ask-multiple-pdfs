@@ -99,6 +99,9 @@ def main():
                 # create vector store
                 vectorstore = get_vectorstore(text_chunks)
 
+                reversed_messages = st.session_state.messages
+                reversed_messages.reverse()
+
                 # create conversation chain
                 st.session_state.conversation = get_conversation_chain(
                     vectorstore)
