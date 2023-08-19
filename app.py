@@ -1,7 +1,7 @@
 import streamlit as st
 import openai
 import os
-import textract
+import pandas as pd
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
@@ -15,15 +15,26 @@ from langchain.llms import HuggingFaceHub
 
 os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
 
-def get_docs_text(docs):
+def get_text_from_files(uploaded_files):
     text = ""
-    for doc in docs:
-        if doc.endswith('.pdf'):
-            pdf_reader = PdfReader(pdf)
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-        elif doc.endswith('.txt'):
-            text += textract.process(doc, method='text').decode('utf-8')
+    for file in uploaded_files:
+        if file.type == "application/pdf":
+            text += get_pdf_text([file])
+        elif file.type == "text/plain":  # .txt
+            text += file.getvalue().decode("utf-8")
+        elif file.type == "text/csv":  # .csv
+            # Assuming CSVs contain text data that you want to extract
+            # Here, we concatenate all the cells in the CSV into a string
+            df = pd.read_csv(file)
+            text += "\n".join(df.astype(str).stack().tolist())
+    return text
+
+def get_pdf_text(pdf_docs):
+    text = ""
+    for pdf in pdf_docs:
+        pdf_reader = PdfReader(pdf)
+        for page in pdf_reader.pages:
+            text += page.extract_text()
     return text
 
 
@@ -91,12 +102,12 @@ def main():
 
     with st.sidebar:
         st.subheader("Your documents")
-        docs = st.file_uploader(
-            "Upload your documents here and click on 'Process'", accept_multiple_files=True, type=["txt","pdf"])
+        pdf_docs = st.file_uploader(
+            "Upload your documents here and click on 'Process'", accept_multiple_files=True, type=["pdf", "txt", "csv"])
         if st.button("Process"):
             with st.spinner("Processing"):
                 # get pdf text
-                raw_text = get_docs_text(docs)
+                raw_text = get_text_from_files(pdf_docs)
                 # get the text chunks
                 text_chunks = get_text_chunks(raw_text)
                 # create vector store
