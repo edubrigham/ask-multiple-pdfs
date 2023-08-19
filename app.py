@@ -1,6 +1,7 @@
 import streamlit as st
 import openai
 import os
+import textract
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
@@ -14,12 +15,15 @@ from langchain.llms import HuggingFaceHub
 
 os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
 
-def get_pdf_text(pdf_docs):
+def extract_text_from_docs(docs):
     text = ""
-    for pdf in pdf_docs:
-        pdf_reader = PdfReader(pdf)
-        for page in pdf_reader.pages:
-            text += page.extract_text()
+    for doc in docs:
+        if doc.endswith('.pdf'):
+            pdf_reader = PdfReader(doc)
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+        elif doc.endswith('.txt'):
+            text += textract.process(doc, method='text').decode('utf-8')
     return text
 
 
@@ -88,11 +92,11 @@ def main():
     with st.sidebar:
         st.subheader("Your documents")
         pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+            "Upload your documents here and click on 'Process'", accept_multiple_files=True, type=["txt","pdf"])
         if st.button("Process"):
             with st.spinner("Processing"):
                 # get pdf text
-                raw_text = get_pdf_text(pdf_docs)
+                raw_text = extract_text_from_docs(docs)
                 # get the text chunks
                 text_chunks = get_text_chunks(raw_text)
                 # create vector store
