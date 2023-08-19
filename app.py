@@ -57,7 +57,7 @@ def get_vectorstore(text_chunks):
 
 
 def get_conversation_chain(vectorstore):
-    llm = ChatOpenAI(model='gpt-4', temperature=0)
+    llm = ChatOpenAI(temperature=0)
     #condense_question_llm = ChatOpenAI(model='gpt-3.5-turbo', temperature=0)
     # llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature":0.5, "max_length":512})
 
@@ -70,7 +70,7 @@ def get_conversation_chain(vectorstore):
     )
     return conversation_chain
 
-
+chat_history=[]
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
     st.session_state.chat_history = response['chat_history']
